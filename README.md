@@ -6,7 +6,7 @@ An intelligent WhatsApp assistant designed for automotive dealerships, built wit
 
 ## 📌 Features
 
-* 🤖 Smart WhatsApp chatbot using OpenAI GPT
+* 🤖 Smart WhatsApp chatbot using Groq's Gemma AI model
 * 📆 Schedule appointments or request online quotes
 * 📊 Google Sheets integration for real-time data registration
 * 🧠 Conversational AI assistant for customer inquiries
@@ -18,7 +18,7 @@ An intelligent WhatsApp assistant designed for automotive dealerships, built wit
 * Node.js
 * WhatsApp Cloud API
 * Google Sheets API
-* OpenAI API (GPT)
+* AI SDK (Groq - Gemma2-9b-it)
 * Axios
 
 ---
@@ -84,6 +84,50 @@ mkdir credentials
 ```plaintext
 Client: ¿Qué documentos necesito para vender mi auto?
 AI: Para vender tu auto necesitas cédula, matrícula y el contrato de compraventa...
+```
+
+---
+
+## 🧠 AI Integration
+
+This project uses `gemma2-9b-it`, a conversational model currently served via **Groq** using the [AI SDK](https://www.npmjs.com/package/aisdk). The integration powers the assistant to respond to customer questions in natural language.
+
+In future iterations, we plan to switch to **OpenRouter** to experiment with a wider variety of AI models, such as Mistral, Claude, and others, based on flexibility and availability.
+
+> ⚠️ Note: The assistant is still under testing. In cases where users do not follow the button-based flow, fallback messages may appear. Improved natural conversation handling is in the roadmap.
+
+### ✨ AI Prompt Configuration
+
+Example prompt used to guide the chatbot response logic:
+
+```js
+const { text } = await generateText({
+  model: groqClient('gemma2-9b-it'),
+  messages: [
+    {
+      role: 'system',
+      content: `
+                        Eres un asistente virtual especializado en compra y venta de vehículos 
+                        para la concesionaria "PremiumCar". Tu objetivo es resolver preguntas 
+                        relacionadas con autos nuevos, usados, precios, procesos de cotización, 
+                        financiamiento, visitas al concesionario y trámites de venta.
+
+                        Responde siempre con información clara, precisa y en lenguaje sencillo, 
+                        como si fueras un bot conversacional.
+
+                        No inicies saludos ni conversaciones, no hagas preguntas, no generes texto innecesario.
+
+                        Si el usuario desea agendar una cita o cotización, recomiéndale usar el botón del menú principal.
+
+                        Si la consulta es muy específica o requiere intervención humana, indícale 
+                        que un asesor le escribirá pronto.
+                    `
+                }, {
+      role: 'user',
+      content: message
+    }
+  ],
+});
 ```
 
 ---
