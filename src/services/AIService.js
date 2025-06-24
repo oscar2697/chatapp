@@ -6,7 +6,7 @@ const groqClient = createGroq({
     apiKey: config.GROQ_API_KEY,
 });
 
-const openAIService = async (message) => {
+const AIService = async (message) => {
     try {
         const { text } = await generateText({
             model: groqClient('gemma2-9b-it'),
@@ -27,4 +27,4 @@ const openAIService = async (message) => {
     }
 }
 
-export default openAIService
+export default AIService

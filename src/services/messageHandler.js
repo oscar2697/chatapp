@@ -1,5 +1,5 @@
+import AIService from './AIService.js';
 import appendToSheet from './googleSheetCredentials.js';
-import openAIService from './openAIService.js';
 import whatsappService from './whatsappService.js';
 
 class MessageHandler {
@@ -193,7 +193,7 @@ class MessageHandler {
         ]
 
         if (state.step === 'question') {
-            response = await openAIService(message)
+            response = await AIService(message)
         }
 
         delete this.assistantState[to]
