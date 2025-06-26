@@ -48,6 +48,7 @@ WHATSAPP_PHONE_NUMBER_ID=your_phone_number_id
 OPENAI_API_KEY=your_openai_api_key
 GOOGLE_SHEET_ID=your_google_sheet_id
 WEBHOOK_VERIFY_TOKEN=your_webhook_verify_token
+BASE_URL=https://graph.facebook.com
 ```
 
 ### 4. Google Sheets Credentials
