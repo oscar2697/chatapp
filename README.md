@@ -1,6 +1,6 @@
 # 🚗 PremiumCar Chatbot
 
-An intelligent WhatsApp assistant designed for automotive dealerships, built with Node.js, the WhatsApp Cloud API, OpenAI GPT, and Google Sheets API. It allows clients to schedule appointments, request quotes, and ask vehicle-related questions—all through a streamlined chat experience.
+An intelligent WhatsApp assistant designed for automotive dealerships, built with Node.js, the WhatsApp Cloud API, AI SDK, and Google Sheets API. It allows clients to schedule appointments, request quotes, and ask vehicle-related questions—all through a streamlined chat experience.
 
 ---
 
