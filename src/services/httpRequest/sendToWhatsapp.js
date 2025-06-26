@@ -1,10 +1,12 @@
 import axios from "axios";
 import config from '../../config/env.js';
 
+const { BASE_URL, API_VERSION, BUSINESS_PHONE, API_TOKEN } = config
+
 const sendToWhatsApp = async (data) => {
-    const baseUrl = `${config.BASE_URL}/${config.API_VERSION}/${config.BUSINESS_PHONE}/messages`
+    const baseUrl = `${BASE_URL}/${API_VERSION}/${BUSINESS_PHONE}/messages`
     const headers = {
-        Authorization: `Bearer ${config.API_TOKEN}`
+        Authorization: `Bearer ${API_TOKEN}`
     };
 
     try {
@@ -14,6 +16,7 @@ const sendToWhatsApp = async (data) => {
             headers: headers,
             data,
         })
+
         return response.data
     } catch (error) {
         console.error(error)

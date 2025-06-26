@@ -6,17 +6,20 @@ class MessageHandler {
     constructor() {
         this.appointmentState = {}
         this.assistantState = {}
+        this.sellState = {}
     }
 
     async handleIncomingMessage(message, senderInfo) {
         if (message?.type === 'text') {
-            const incomingMessage = message.text.body.toLowerCase().trim()
+            const incomingMessage = message.text.body.toLowerCase().trim();
 
             if (this.isGreeting(incomingMessage)) {
-                await this.sendWelcomeMessage(message.from, message.id, senderInfo)
-                await this.sendWelcomeMenu(message.from)
+                await this.sendWelcomeMessage(message.from, message.id, senderInfo);
+                await this.sendWelcomeMenu(message.from);
             } else if (["video", "audio", "image", "document"].includes(incomingMessage)) {
                 await this.sendMedia(message.from, incomingMessage);
+            } else if (this.sellState[message.from]) {
+                await this.handleSellFlow(message.from, incomingMessage);
             } else if (this.appointmentState[message.from]) {
                 await this.handleAppointmentFlow(message.from, incomingMessage);
             } else if (this.assistantState[message.from]) {
@@ -28,14 +31,13 @@ class MessageHandler {
                 );
                 await this.sendWelcomeMenu(message.from);
             }
-
-            await whatsappService.markAsRead(message.id)
+            await whatsappService.markAsRead(message.id);
         } else if (message?.type === 'interactive') {
-            const option = message?.interactive?.button_reply?.id || message?.interactive?.button_reply?.title
-            const selectedOption = option ? option.toLowerCase().trim() : ''
+            const option = message?.interactive?.button_reply?.id || message?.interactive?.button_reply?.title;
+            const selectedOption = option ? option.toLowerCase().trim() : '';
 
-            await this.handleMenuOption(message.from, selectedOption)
-            await whatsappService.markAsRead(message.id)
+            await this.handleMenuOption(message.from, selectedOption);
+            await whatsappService.markAsRead(message.id);
         }
     }
 
@@ -58,9 +60,9 @@ class MessageHandler {
     async sendWelcomeMenu(to) {
         const menuMessage = '¿En qué puedo ayudarte hoy?'
         const buttons = [
-            { type: 'reply', reply: { id: 'option_1', title: 'Comprar y Vender' } },
-            { type: 'reply', reply: { id: 'option_2', title: 'Consultar' } },
-            { type: 'reply', reply: { id: 'option_3', title: 'Cotiza y visita' } },
+            { type: 'reply', reply: { id: 'option_sell', title: 'Comprar y Vender' } },
+            { type: 'reply', reply: { id: 'option_consult', title: 'Consultar' } },
+            { type: 'reply', reply: { id: 'option_visit', title: 'Cotiza y visita' } },
         ]
 
         await whatsappService.sendInteractiveButtons(to, menuMessage, buttons)
@@ -70,16 +72,21 @@ class MessageHandler {
         let response
 
         switch (selectedOption) {
-            case 'option_1':
-                response = '¿Qué tipo de auto estás buscando o vendiendo?';
+            case 'option_sell':
+                this.sellState[to] = { step: 'askCar' }
+                response = '¿Qué auto deseas vender o comprar? Por favor, indícalo con marca y modelo.';
                 break;
-            case 'option_2':
+            case 'option_consult':
                 this.assistantState[to] = { step: 'question' }
                 response = '¿Cuál es tu consulta?';
                 break;
-            case 'option_3':
+            case 'option_visit':
                 this.appointmentState[to] = { step: 'name' }
                 response = 'Perfecto, iniciemos el proceso. ¿Podrías indicarme tu nombre completo, por favor?';
+                break;
+            case 'option_contact':
+                response = 'Si necesitas más información o  asistencia, por favor contáctanos directamente.';
+                await this.sendContact(to);
                 break;
 
             default:
@@ -188,8 +195,8 @@ class MessageHandler {
 
         const menuMessage = '¿La respuesta fue útil? ¿Necesitas algo más?'
         const buttons = [
-            { type: 'reply', reply: { id: 'option_4', title: 'Más Información' } },
-            { type: 'reply', reply: { id: 'option_5', title: 'No, gracias' } },
+            { type: 'reply', reply: { id: 'option_contact', title: 'Más Información' } },
+            { type: 'reply', reply: { id: 'option_no_thanks', title: 'No, gracias' } },
         ]
 
         if (state.step === 'question') {
@@ -200,6 +207,65 @@ class MessageHandler {
 
         await whatsappService.sendMessage(to, response)
         await whatsappService.sendInteractiveButtons(to, menuMessage, buttons)
+    }
+
+    async handleSellFlow(to, message) {
+        const state = this.sellState[to];
+
+        if (state.step === 'askCar') {
+            state.car = message;
+            state.step = 'done';
+            await whatsappService.sendMessage(
+                to,
+                `¡Perfecto! Para continuar con la revisión del auto "${state.car}", te comparto la ubicación de nuestro concesionario.`
+            );
+            await this.sendLocation(to);
+            delete this.sellState[to];
+        }
+    }
+
+    async sendContact(to) {
+        const contact = {
+            emails: [
+                {
+                    email: 'lindooscar635@gmail.com',
+                    type: 'WORK',
+                }
+            ],
+            name: {
+                formatted_name: 'PremiumCar',
+                first_name: 'Premium',
+                last_name: 'Car',
+            },
+            org: {
+                company: 'PremiumCar',
+                department: 'Atención al Cliente',
+                title: 'Asesor de Ventas',
+            },
+            phones: [
+                {
+                    phone: '+593998564165',
+                    type: 'WORK',
+                }
+            ],
+            urls: [
+                {
+                    url: 'https://www.tiktok.com/@premiumcar33?is_from_webapp=1&sender_device=pc',
+                    type: 'WORK',
+                }
+            ]
+        }
+
+        await whatsappService.sendContactMessage(to, contact)
+    }
+
+    async sendLocation(to) {
+        const latitude = -0.22985
+        const longitude = -78.52495
+        const name = 'PremiumCar Concesionario'
+        const address = 'Av. Amazonas N34-123, Ambato, Ecuador'
+
+        await whatsappService.sendLocationMessage(to, latitude, longitude, name, address)
     }
 }
 
