@@ -73,8 +73,8 @@ class MessageHandler {
 
         switch (selectedOption) {
             case 'option_sell':
-                this.sellState[to] = { step: 'askCar' }
-                response = '¿Qué auto deseas vender o comprar? Por favor, indícalo con marca y modelo.';
+                this.sellState[to] = { step: 'askType' }
+                response = '¿Quieres *vender* o *comprar* un auto?';
                 break;
             case 'option_consult':
                 this.assistantState[to] = { step: 'question' }
@@ -87,6 +87,9 @@ class MessageHandler {
             case 'option_contact':
                 response = 'Si necesitas más información o  asistencia, por favor contáctanos directamente.';
                 await this.sendContact(to);
+                break;
+            case 'option_no_thanks':
+                response = '¡Gracias por tu interés! Si necesitas algo más, no dudes en preguntar. 🚗';
                 break;
 
             default:
@@ -153,8 +156,8 @@ class MessageHandler {
             await whatsappService.sendMessage(
                 to,
                 'Parece que aún no has iniciado una solicitud. Por favor selecciona *"Cotiza y visita"* en el menú principal.'
-            );
-            return;
+            )
+            return
         }
 
         let response
@@ -177,8 +180,12 @@ class MessageHandler {
                 break;
             case 'preferredDate':
                 state.preferredDate = message
-                response = this.completeAppointmentFlow(to)
-                break;
+                response = this.completeAppointmentFlow(to) +
+                    '\n\n📍 Te enviamos la ubicación en caso de que sea necesario.';
+                delete this.appointmentState[to];
+                await whatsappService.sendMessage(to, response);
+                await this.sendLocation(to);
+                return;
 
             default:
                 response = 'Ha ocurrido un error en el flujo. Reinicia el proceso por favor.';
@@ -193,7 +200,7 @@ class MessageHandler {
         const state = this.assistantState[to]
         let response
 
-        const menuMessage = '¿La respuesta fue útil? ¿Necesitas algo más?'
+        const menuMessage = '¿Necesitas algo más?'
         const buttons = [
             { type: 'reply', reply: { id: 'option_contact', title: 'Más Información' } },
             { type: 'reply', reply: { id: 'option_no_thanks', title: 'No, gracias' } },
@@ -210,17 +217,59 @@ class MessageHandler {
     }
 
     async handleSellFlow(to, message) {
-        const state = this.sellState[to];
+        const state = this.sellState[to]
+
+        if (state.step === 'askType') {
+            const lowerMsg = message.toLowerCase().trim()
+
+            if (lowerMsg === 'comprar' || lowerMsg === 'vender') {
+                state.type = lowerMsg
+                state.step = 'askCar'
+                await whatsappService.sendMessage(
+                    to,
+                    '¿Qué auto deseas vender o comprar? Por favor, indícalo con marca y modelo.'
+                )
+            } else {
+                await whatsappService.sendMessage(
+                    to,
+                    'Por favor, responde con "comprar" o "vender".'
+                )
+            }
+
+            return
+        }
 
         if (state.step === 'askCar') {
+            const loweMsg = message.toLowerCase().trim();
+
+            if (loweMsg === 'comprar' || loweMsg === 'vender') {
+                await whatsappService.sendMessage(
+                    to,
+                    'Por favor, indícanos la marca y modelo del auto que deseas vender o comprar. Ejemplo: "Toyota Corolla 2018".'
+                )
+
+                return
+            }
+
             state.car = message;
-            state.step = 'done';
+            state.step = 'done'
+
+            const sheetName = state.type === 'comprar' ? 'AutoCompra' : 'AutoVenta'
+            const userData = [
+                to,
+                state.type,
+                state.car,
+                new Date().toISOString()
+            ]
+            appendToSheet(userData, sheetName)
+
             await whatsappService.sendMessage(
                 to,
                 `¡Perfecto! Para continuar con la revisión del auto "${state.car}", te comparto la ubicación de nuestro concesionario.`
-            );
-            await this.sendLocation(to);
-            delete this.sellState[to];
+            )
+
+            await this.sendLocation(to)
+            delete this.sellState[to]
         }
     }
 
