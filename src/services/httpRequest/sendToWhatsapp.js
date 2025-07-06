@@ -6,7 +6,8 @@ const { BASE_URL, API_VERSION, BUSINESS_PHONE, API_TOKEN } = config
 const sendToWhatsApp = async (data) => {
     const baseUrl = `${BASE_URL}/${API_VERSION}/${BUSINESS_PHONE}/messages`
     const headers = {
-        Authorization: `Bearer ${API_TOKEN}`
+        Authorization: `Bearer ${API_TOKEN}`,
+        'Content-Type': 'application/json'
     };
 
     try {

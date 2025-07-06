@@ -42,7 +42,18 @@ class MessageHandler {
     }
 
     isGreeting(message) {
-        const greetings = ["hola", "hello", "hi", "buenas tardes"]
+        const greetings = [
+            "hola",
+            "buenos días",
+            "buenas noches",
+            "buenas tardes",
+            "que tal mi estimado",
+            "buenas",
+            "saludos",
+            "que tal mi estimado, como está?",
+            "saludos cordiales",
+            "que tal"
+        ]
         return greetings.includes(message)
     }
 
@@ -171,7 +182,7 @@ class MessageHandler {
             case 'carType':
                 state.carType = message
                 state.step = 'visitType'
-                response = '¿Deseas agendar una visita al concesionario o prefieres una cotización en línea?';
+                response = '¿Qué prefieres?\n1. Agendar una visita presencial\n2. Solicitar una cotización en línea\n3. Recibir asesoría personalizada\n4. Solo información, por ahora';
                 break;
             case 'visitType':
                 state.visitType = message
@@ -180,11 +191,49 @@ class MessageHandler {
                 break;
             case 'preferredDate':
                 state.preferredDate = message
-                response = this.completeAppointmentFlow(to) +
-                    '\n\n📍 Te enviamos la ubicación en caso de que sea necesario.';
-                delete this.appointmentState[to];
-                await whatsappService.sendMessage(to, response);
-                await this.sendLocation(to);
+                const lowerDate = message.toLowerCase().trim()
+
+                let locationMessage = ''
+                let locationInfo = {
+                    latitude: -1.293781,
+                    longitude: -78.600629,
+                    name: 'PremiumCar Concesionario',
+                    address: 'Ambato, Ecuador'
+                }
+
+                if (lowerDate.includes('lunes') || lowerDate.includes('martes')) {
+                    locationMessage = '📍 El día seleccionado estaremos en la *Feria de Ambato*.'
+                    locationInfo = {
+                        latitude: -1.298246,
+                        longitude: -78.597443,
+                        name: 'Feria de Ambato',
+                        address: 'Centro de Revisión Vehicular de Ambato'
+                    }
+                } else if (lowerDate.includes('miércoles') || lowerDate.includes('jueves') || lowerDate.includes('viernes')) {
+                    locationMessage = '📍 El día seleccionado estaremos en nuestro *Concesionario PremiumCar*.'
+                    locationInfo = {
+                        latitude: -1.293781,
+                        longitude: -78.600629,
+                        name: 'Patio PremiumCar',
+                        address: 'Av. Confraternidad, Ambato'
+                    }
+                } else if (lowerDate.includes('sábado')) {
+                    locationMessage = '📍 El día seleccionado estaremos en la *Feria de Quito*.'
+                    locationInfo = {
+                        latitude: -0.341773,
+                        longitude: -78.554054,
+                        name: 'Feria de Quito',
+                        address: 'Av. Simón Bolívar, Quito'
+                    }
+                } else {
+                    locationMessage = '📍 El día seleccionado no está dentro del horario de atención. Por favor, elige otro día.'
+                }
+
+                response = this.completeAppointmentFlow(to) + `\n\n${locationMessage}`
+                delete this.appointmentState[to]
+
+                await whatsappService.sendMessage(to, response)
+                await whatsappService.sendLocationMessage(to, locationInfo.latitude, locationInfo.longitude, locationInfo.name, locationInfo.address)
                 return;
 
             default:
@@ -309,10 +358,10 @@ class MessageHandler {
     }
 
     async sendLocation(to) {
-        const latitude = -0.22985
-        const longitude = -78.52495
+        const latitude = -1.293781
+        const longitude = -78.600629
         const name = 'PremiumCar Concesionario'
-        const address = 'Av. Amazonas N34-123, Ambato, Ecuador'
+        const address = 'Ambato, Ecuador'
 
         await whatsappService.sendLocationMessage(to, latitude, longitude, name, address)
     }
